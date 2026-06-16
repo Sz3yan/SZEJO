@@ -1,17 +1,5 @@
 # SECURITY.md
 
-Standing security instructions for any AI assistant (Claude in particular) writing or modifying code in this monorepo. Apply by default — do not wait to be asked.
-
-This monorepo contains three sub-projects with distinct security surfaces:
-
-- `szejo-portfolio` — FastAPI + asyncpg API and a Vite/JSX frontend. Public surface.
-- `szejo-control-plane` — `mainframe` FastAPI (OAuth/OIDC issuer, WebAuthn/passkeys, JWT) and `mainframe-ui` (Next.js console).
-- `szejo-atlas` — MWDB-core fork plus Karton workers and a React/TS UI.
-
-Every code change must be checked against the 12 categories below. If a change touches any of these surfaces, the response must (a) name the category, (b) state the prevention measure applied inline with the diff, and (c) explicitly call out anything left as a known gap rather than silently shipping it.
-
-The companion document `szejo-portfolio/docs/security-hardening.md` records concrete fixes already applied; do not regress them.
-
 ---
 
 ## 1. Broken Access Control (BOLA / IDOR)

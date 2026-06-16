@@ -40,6 +40,9 @@ These guidelines are working if:
     - If a simpler approach exists, say so. Push back when warranted.
     - If something is unclear, stop. Name what's confusing. Ask.
 
+    Make use of Multi-Agent Workflows (if needed)
+    - orchestrator runs Opus 4.8 efforts max and delegates subtasks to Sonnet 4.6 effort high sub-agents
+
 2. Simplicity First (Minimum code that solves the problem. Nothing speculative)
 
     - No features beyond what was asked.
@@ -49,6 +52,8 @@ These guidelines are working if:
     - If you write 200 lines and it could be 50, rewrite it.
 
     Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+    Make use of the caveman plugin to save token cost. 
 
 3. Surgical Changes (Touch only what you must. Clean up only your own mess.)
 
@@ -63,6 +68,10 @@ These guidelines are working if:
     - Don't remove pre-existing dead code unless asked.
 
     The test: Every changed line should trace directly to the user's request.
+
+    All to be in docker environment
+    - host only have the source code
+    - testing, installing packages, linting to be done in docker environment
 
 4. Goal-Driven Execution (Define success criteria. Loop until verified)
 
@@ -82,19 +91,9 @@ These guidelines are working if:
 
 5. Security First design (Design secure)
 
-    Consult `SECURITY.md`, when designing 
+    Every code change must be checked against the 12 categories listed in `SZEJO/SECURITY.md`. 
 
-1. Before writing or modifying any code, consult `SECURITY.md` at the repo root. It lists 12 attack categories (BOLA/IDOR, business logic & validation, code/command injection, SQLi/NoSQLi, LLM/prompt injection, SSRF, auth/session, client-side XSS/CSRF/open-redirect, deserialization/SSTI, files/misconfig, secrets/crypto, hardening/CORS/TLS/headers) and the concrete prevention rules and repo touchpoints for each. Apply them by default — do not wait to be asked. When a change touches any of those surfaces, name the category, state the prevention measure inline with the diff, and call out anything left as a known gap rather than silently shipping it.
-
-2. Use the Caveman plugin to minimize token usage during long sessions (>50k tokens consumed) or when working on Atlas/Mainframe code-heavy tasks. For short Q&A or planning-only sessions, default off.
-
-3. When opening a PR, enable auto-merge so it merges once required status checks pass. This depends on branch protection being configured on `main` with CI, lint, and tests as required checks. If branch protection is not in place on the target repo, do not enable auto-merge — flag it instead so it can be configured first.
-
-4. For multi-agent workflows, the orchestrator runs Opus 4.8 and delegates subtasks to Sonnet 4.6 sub-agents. When executing implementation plans, prefer **subagent-driven development** (superpowers:subagent-driven-development skill): fresh subagent per task, two-stage review (spec compliance then code quality) after each task, continuous execution without pausing for check-ins.
-
-5. Anything that touches services, environment variables from Infisical, network, or the runtime environment runs inside Docker — including integration tests, end-to-end tests, and anything exercising MWDB, Karton, Redis, or Mainframe. Pure static checks with no external dependencies (`ruff`, `mypy`, isolated unit tests) may run on the host for speed.
-
-
-
-
-
+    If a change touches any of these surfaces, the response must 
+        - name the category
+        - state the prevention measure applied inline with the diff
+        - explicitly call out anything left as a known gap rather than silently shipping it.
