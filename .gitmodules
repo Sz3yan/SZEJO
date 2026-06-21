@@ -1,0 +1,12 @@
+[submodule "szejo-atlas"]
+	path = szejo-atlas
+	url = https://github.com/Sz3yan/szejo-atlas.git
+	branch = production
+[submodule "szejo-control-plane"]
+	path = szejo-control-plane
+	url = https://github.com/Sz3yan/szejo-control-plane.git
+	branch = production
+[submodule "szejo-portfolio"]
+	path = szejo-portfolio
+	url = https://github.com/Sz3yan/szejo-portfolio.git
+	branch = production
