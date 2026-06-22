@@ -97,3 +97,8 @@ These guidelines are working if:
         - name the category
         - state the prevention measure applied inline with the diff
         - explicitly call out anything left as a known gap rather than silently shipping it.
+
+6. Scripts in Python (No shell scripts. Python instead.)
+
+    - All new automation/scripts shall be written in Python, not shell (.sh).
+    - Applies to new scripts. Don't rewrite existing shell scripts unless asked.
