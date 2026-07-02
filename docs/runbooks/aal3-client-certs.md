@@ -20,8 +20,8 @@ handshake on `:8443`.
 
 ```bash
 # 1. Secrets.
-python3 -m scripts.szejo secrets rotate MTLS_GATEWAY_SECRET
-python3 -m scripts.szejo secrets set MAINFRAME_AEGIS_TOKEN   # mainframe token, scope aegis:manage (optional, for /enroll)
+szejo secrets rotate MTLS_GATEWAY_SECRET
+szejo secrets set MAINFRAME_AEGIS_TOKEN   # mainframe token, scope aegis:manage (optional, for /enroll)
 
 # 2. Aegis trust chain → both Traefik and mainframe.
 curl -fsS https://aegis.sz3yan.com/ca/chain.pem -o manifest/traefik/certs/aegis-chain.pem
@@ -30,7 +30,7 @@ docker cp manifest/traefik/certs/aegis-chain.pem \
 
 # 3. Activate the Traefik mTLS dynamic config + insert the marker secret.
 cp manifest/traefik/dynamic/mtls.yml.example manifest/traefik/dynamic/mtls.yml
-sed -i "s#REPLACE_WITH_MTLS_GATEWAY_SECRET#$(python3 -m scripts.szejo secrets get MTLS_GATEWAY_SECRET)#" \
+sed -i "s#REPLACE_WITH_MTLS_GATEWAY_SECRET#$(szejo secrets get MTLS_GATEWAY_SECRET)#" \
   manifest/traefik/dynamic/mtls.yml
 ```
 
@@ -55,7 +55,7 @@ sed -i "s#REPLACE_WITH_MTLS_GATEWAY_SECRET#$(python3 -m scripts.szejo secrets ge
 ```
 
 ```bash
-python3 -m scripts.szejo secrets run -- docker compose up -d szejo-control-plane-proxy szejo-control-plane-mainframe
+szejo secrets run -- docker compose up -d szejo-control-plane-proxy szejo-control-plane-mainframe
 ```
 
 ## Enroll a user + log in

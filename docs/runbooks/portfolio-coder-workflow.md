@@ -21,7 +21,6 @@ Containers:
 | `portfolio-app` | `ghcr.io/sz3yan/portfolio-app:latest` | 8080 → sz3yan.com |
 | `portfolio-cms` | `ghcr.io/sz3yan/portfolio-cms:latest` | 3000/8081 → cms.sz3yan.com |
 | `portfolio-db` | postgres:16 | 5432 (internal) |
-| `watchtower` | containrrr/watchtower | — |
 
 ---
 
@@ -39,9 +38,16 @@ coder ssh Sz3yan/portfolio -- "docker exec portfolio-app printenv NODE_ENV"
 
 ## Deploying code changes
 
-Normal path: push to `production` branch → GitHub Actions CI builds images → Watchtower polls and pulls.
+No Watchtower — nothing polls in the background. Two ways to pick up a new image
+after push to `production` (GitHub Actions CI builds it):
 
-Manual pull (skip Watchtower wait):
+Restart the workspace (the template's startup script runs `docker compose pull`
+before `up -d` on every start):
+```bash
+coder stop Sz3yan/portfolio && coder start Sz3yan/portfolio
+```
+
+Or pull without restarting the whole workspace:
 ```bash
 coder ssh Sz3yan/portfolio -- "cd ~/szejo-portfolio && docker compose pull portfolio-app portfolio-cms && docker compose up -d portfolio-app portfolio-cms"
 ```

@@ -11,7 +11,7 @@ Named for the Roman god of keys, doorways, and transitions.
 Every private key is stored only as **ciphertext wrapped by a master key (KEK)**:
 
 - The KEK is derived at boot from `JANUS_UNSEAL_KEY` (a high-entropy secret in
-  .env.enc, managed via szejo secrets) via **HKDF-SHA256**, and lives **only in memory** — never
+  the pass store, managed via szejo secrets) via **HKDF-SHA256**, and lives **only in memory** — never
   persisted.
 - Key material is wrapped with **AES-256-GCM** (`nonce ‖ ciphertext+tag`).
 - If `JANUS_UNSEAL_KEY` is absent, Janus boots **sealed**: `/health` stays green
@@ -86,11 +86,13 @@ The **management API** (`/v1/keys`, `/seal`) is internal-only — no Traefik rou
 reachable on `orchubi_network` by container hostname (`szejo-control-plane-janus`).
 
 A **narrow public surface** is routed at `janus.sz3yan.com`: only `/v1/transit/*`
-(a HashiCorp-Vault-Transit-compatible signing API) and `/health`. cosign's
-built-in `hashivault` provider uses it to sign/verify CI images with no custom
-plugin, gated by GitHub Actions OIDC + per-key policy. See
-[`image-signing.md`](image-signing.md). The management API is **not** matched by
-the public router, so key creation/rotation/decrypt stay internal.
+(a HashiCorp-Vault-Transit-compatible signing API) and `/health`. This backs
+cosign's built-in `hashivault` provider for CI image signing, gated by GitHub
+Actions OIDC + per-key policy — currently parked (not wired into any CI
+workflow) until szejo is stable; see
+[`future-implementations/architecture/image-signing.md`](../future-implementations/architecture/image-signing.md).
+The management API is **not** matched by the public router, so key
+creation/rotation/decrypt stay internal.
 
 ## Deploy
 
@@ -102,12 +104,12 @@ the public router, so key creation/rotation/decrypt stay internal.
 
 ```bash
 # Status (is it sealed?)
-python3 -m scripts.szejo secrets run -- \
+szejo secrets run -- \
   docker compose exec szejo-control-plane-janus \
   python -c "import urllib.request,json; print(urllib.request.urlopen('http://localhost:8000/seal/status').read())"
 
 # Rotate the DB password (also needs ALTER USER in the db container)
-python3 -m scripts.szejo secrets rotate JANUS_POSTGRES_PASSWORD --restart
+szejo secrets rotate JANUS_POSTGRES_PASSWORD --restart
 
 # Rotate the unseal key — CAUTION: re-seals every key (migration event), plan it.
 ```

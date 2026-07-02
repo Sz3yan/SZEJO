@@ -22,11 +22,11 @@ curl -XPOST http://szejo-control-plane-janus:8000/v1/keys \
   -d '{"name":"jwt-mainframe","key_type":"ES256","purpose":"jwt"}'
 
 # 2. Give mainframe a janus:manage token + flip the flag.
-python3 -m scripts.szejo secrets set MAINFRAME_JANUS_TOKEN '<token>'
-python3 -m scripts.szejo secrets set JWT_SIGNER janus
+szejo secrets set MAINFRAME_JANUS_TOKEN '<token>'
+szejo secrets set JWT_SIGNER janus
 
 # 3. Recreate mainframe (re-reads env; fetches the Janus public key into JWKS).
-python3 -m scripts.szejo secrets run -- docker compose up -d szejo-control-plane-mainframe
+szejo secrets run -- docker compose up -d szejo-control-plane-mainframe
 ```
 
 On boot in `janus` mode mainframe publishes **both** keys in its JWKS — the new
@@ -45,8 +45,8 @@ curl -fsS https://mainframe.sz3yan.com/.well-known/jwks.json | jq '.keys[].kid'
 ## Rollback (instant)
 
 ```bash
-python3 -m scripts.szejo secrets set JWT_SIGNER local
-python3 -m scripts.szejo secrets run -- docker compose up -d szejo-control-plane-mainframe
+szejo secrets set JWT_SIGNER local
+szejo secrets run -- docker compose up -d szejo-control-plane-mainframe
 ```
 The on-disk key resumes signing immediately. Because both public keys stay in
 JWKS during the transition, tokens signed under either key keep verifying.

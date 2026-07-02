@@ -71,7 +71,14 @@ hashivault://img-<svc>` with `VAULT_ADDR=https://janus.sz3yan.com`.
 
 - The standalone Fulcio compose service, `manifest/sigstore/`, and the
   `FULCIO_HOST`/`CA_ROOT_*` settings were removed (Phase 0).
-- `szejo certs` and `szejo deploy verify` are retained: the CA
-  cert-construction logic folds into Aegis; the verified-deploy gate re-points to
-  `cosign verify --key` once Janus signs (Phase 2).
-- Mainframe continues to deploy via Watchtower until the Janus-signed gate is live.
+- `szejo certs` is retained (now a thin Aegis/Janus HTTP client — no local CA
+  material). `szejo deploy verify` and the cosign deploy-verify gate are
+  **parked** under `future-implementation/` — szejo isn't stable enough yet
+  for an unattended deploy gate to be worth the operational risk.
+- Watchtower has been **removed entirely**, both from the control plane and
+  from every Coder workspace template. There is no auto-updater anywhere
+  right now: control-plane image updates are manual
+  (`docker compose pull <service> && up -d <service>`); Coder workspaces
+  (portfolio/atlas/sentinel) pull their latest image on every workspace
+  restart instead (their startup scripts run `docker compose pull` before
+  `up -d`).

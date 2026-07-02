@@ -8,7 +8,7 @@ localhost).
 
 Template: `szejo-control-plane/manifest/coder/templates/szejo-portfolio/main.tf`
 Module: `registry.coder.com/coder/claude-code/coder` v5.2.0
-Secret key: `CLAUDE_OAUTH_TOKEN` in `.env.enc`
+Secret key: `CLAUDE_OAUTH_TOKEN` in the pass store
 
 ---
 
@@ -91,7 +91,7 @@ If `claude whoami` fails with an auth error, the token is expired — rotate it.
   in the agent environment.
 - The token is a Coder **sensitive template variable** — it is never stored in
   workspace logs or shown in the Coder UI.
-- If `CLAUDE_OAUTH_TOKEN` is empty in `.env.enc`, Claude Code is still
+- If `CLAUDE_OAUTH_TOKEN` is empty in the pass store, Claude Code is still
   installed but unauthenticated. Auth manually in the workspace with
   `coder port-forward portfolio.main --tcp <port>:<port>` (see below).
 

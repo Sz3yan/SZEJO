@@ -107,71 +107,77 @@ These guidelines are working if:
 
 SZEJO CLI (szejo-control-plane operator tool)
 
-Run from `szejo-control-plane/`. Invoked as:
-  - `python3 -m scripts.szejo <cmd>`  (always works)
-  - `szejo <cmd>`                     (if pip-installed: `pip install -e .`)
+Run from `szejo-control-plane/`. Installed as a real console script:
+  - `uv tool install --editable . --python 3.11` (or `pip install -e .`) → `szejo <cmd>` on PATH
 
 Most subcommands need decrypted secrets. Chain them through:
-  `python3 -m scripts.szejo secrets run -- <any-cmd-here>`
+  `szejo secrets run -- <any-cmd-here>`
 
-This decrypts `.env.enc` into memory and injects all vars as env — plaintext never touches disk.
+Secrets live in the `pass` store (pass+GPG, `~/.password-store/szejo/`) — nothing
+encrypted is committed to the repo. `secrets run` loads it into memory and
+injects env vars into the subprocess; plaintext never touches disk.
+
+`certs` is a thin HTTP client of Aegis/Janus — it holds no CA material itself,
+so **Aegis and Janus must already be running** (`docker compose up -d`) before
+any `certs` command will do anything.
 
 ### Subcommands
 
-**secrets** — CRUD on `.env.enc` (SOPS+age encrypted)
+**secrets** — CRUD against the pass store
+  - `secrets init`                  one-time: bootstrap GPG key + pass store
   - `secrets run [--tf] -- <cmd>`   inject decrypted env into any command; `--tf` also exports TF_VAR_*
   - `secrets get KEY`               print one value
   - `secrets set KEY [VALUE]`       set a value (prompts if VALUE omitted)
   - `secrets rotate KEY [--restart]` regenerate a generated secret; `--restart` recreates affected compose services
-  - `secrets edit`                  open `.env.enc` in $EDITOR via sops
-  - `secrets encrypt`               encrypt `.env` → `.env.enc`, delete plaintext
-  - `secrets decrypt`               decrypt `.env.enc` → `.env`
-  - `secrets load`                  print decrypted `.env.enc` to stdout
+  - `secrets edit KEY`              open one pass entry in $EDITOR
+  - `secrets load`                  print all secrets as dotenv to stdout
 
 **bootstrap** — provision secrets/credentials before `docker compose up -d`
   - Idempotent. Generates stable secrets once, rotates admin password unless passkeys registered.
   - `bootstrap [--force] [--apply] [--sync-downstream]`
 
 **setup** — full-stack provisioning (bootstrap → terraform → compose up → crowdsec)
-  - Single command for fresh environments. Safe to re-run.
-  - `szejo secrets run -- python3 -m scripts.szejo setup`
+  - Single command for fresh environments. Safe to re-run. Docker Compose only, no k3s.
+  - `szejo secrets run -- szejo setup`
 
-**certs** — Root CA / intermediates (Fulcio, client-auth) + Aegis-issued internal TLS
-  - `certs root`                    create self-signed Root CA (idempotent-guarded)
-  - `certs intermediate <kind>`     issue per-purpose intermediate (fulcio | client)
-  - `certs all`                     root + fulcio intermediate (deploy-gate bootstrap)
-  - `certs issue [...]`             issue internal TLS cert from Aegis
+**certs** — Aegis-backed CA + internal TLS issuance (no local CA material)
+  - `certs init`                    idempotently create the Root + TLS CAs in Aegis (keys minted in Janus)
+  - `certs issue [...]`             issue an internal TLS cert from Aegis
   - `certs renew [...]`             same as issue, cron-friendly (schedule monthly)
 
 **coder** — push Coder workspace templates; single source of truth for template variables
-  - `coder push [template...]`      push one or all templates (szejo-base, szejo-atlas, szejo-portfolio)
+  - `coder push [template...]`      push one or all templates (szejo-base, szejo-atlas, szejo-portfolio, szejo-sentinel)
   - Variables read from decrypted env automatically — always chain via `secrets run`
-  - Example: `python3 -m scripts.szejo secrets run -- python3 -m scripts.szejo coder push szejo-portfolio`
+  - Example: `szejo secrets run -- szejo coder push szejo-portfolio`
 
-**deploy** — cosign-gated deploy (replaces Watchtower for signed services)
-  - `deploy verify [service] [image-repo] [pubkey]`
-  - Pulls :latest, refuses deploy unless cosign verifies image was signed by per-service key in Janus
-  - Fail-closed: any verification error leaves running container untouched
-  - Installed as `szejo-deploy-verify.timer` systemd unit (runs every 2 min) by `szejo setup`
+**socket-guard** — self-heal the docker-socket-proxy after a Docker restart
+  - `socket-guard run` / `socket-guard install`
+
+No auto-updater: Watchtower and the cosign deploy-verify gate are both removed
+from the active path (parked under `future-implementation/` — szejo isn't
+stable enough yet for unattended deploys). Update control-plane images
+manually: `docker compose pull <service> && docker compose up -d <service>`.
+Coder workspaces (portfolio/atlas/sentinel) instead pull their latest image on
+every workspace restart (`coder stop <name> && coder start <name>`).
 
 ### Common patterns
 
 ```bash
 # Run any command with secrets injected
-python3 -m scripts.szejo secrets run -- <cmd>
+szejo secrets run -- <cmd>
 
 # Push a single Coder template
-python3 -m scripts.szejo secrets run -- python3 -m scripts.szejo coder push szejo-portfolio
+szejo secrets run -- szejo coder push szejo-portfolio
 
 # Push all Coder templates
-python3 -m scripts.szejo secrets run -- python3 -m scripts.szejo coder push
+szejo secrets run -- szejo coder push
 
 # Rotate a secret and restart affected services
-python3 -m scripts.szejo secrets rotate MAINFRAME_SECRET_KEY --restart
+szejo secrets rotate MAINFRAME_SECRET_KEY --restart
 
 # Get a single secret value
-python3 -m scripts.szejo secrets get CODER_SESSION_TOKEN
+szejo secrets get CODER_SESSION_TOKEN
 
 # Run terraform with secrets injected as TF_VAR_*
-python3 -m scripts.szejo secrets run --tf -- terraform apply manifest/terraform/
+szejo secrets run --tf -- terraform apply manifest/terraform/
 ```

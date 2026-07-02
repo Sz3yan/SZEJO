@@ -49,7 +49,7 @@ reinventing:
 There is a deliberate bottom turtle so trust is anchored, not circular:
 
 ```
-szejo secrets (.env.enc, age key)         ← the root secret store (offline age key)
+szejo secrets (pass store, GPG key)       ← the root secret store
    └─ JANUS_UNSEAL_KEY  ──► Janus unseals (derives in-memory KEK)
         └─ Janus holds CA keys ──► Aegis initializes its CA via Janus
              └─ Aegis issues certs ──► Traefik internal TLS, client certs

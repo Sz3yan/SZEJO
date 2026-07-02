@@ -22,7 +22,7 @@ cert still serves everything else. Reverting = delete one file.
 
 ```bash
 # 1. Issue the cert (Aegis generates the keypair, returns it once).
-python3 -m scripts.szejo secrets run -- python3 -m scripts.szejo certs issue \
+szejo secrets run -- szejo certs issue \
   --cn sz3yan.com --sans '*.sz3yan.com,sz3yan.com'
 #    → writes manifest/traefik/certs/internal.{cert,key}.pem
 
@@ -45,7 +45,7 @@ curl -fsS https://aegis.sz3yan.com/ca/root.pem -o szejo-root.pem
 
 ```cron
 0 3 1 * * cd /path/to/szejo-control-plane && \
-  python3 -m scripts.szejo secrets run -- python3 -m scripts.szejo certs renew
+  szejo secrets run -- szejo certs renew
 ```
 Re-issues + overwrites the files; Traefik hot-reloads on the change.
 
