@@ -25,7 +25,8 @@ cert still serves everything else. Reverting = delete one file.
 ```bash
 # 1. Issue the cert (Aegis generates the keypair, returns it once).
 #    No wrapper — szejo subcommands self-inject their declared keys.
-szejo certs issue --cn sz3yan.com --sans '*.sz3yan.com,sz3yan.com'
+#    Default SANs: *.sz3yan.com, sz3yan.com, *.orchubi.sz3yan.com (tailnet tier).
+szejo certs issue
 #    → writes manifest/traefik/certs/internal.{cert,key}.pem
 
 # 2. Activate the dynamic config (Traefik hot-reloads via file.watch).
@@ -40,7 +41,7 @@ cp manifest/traefik/dynamic/tls-internal.yml.example \
 echo | openssl s_client -connect <host>:443 -servername mainframe.sz3yan.com 2>/dev/null \
   | openssl x509 -noout -issuer -subject
 # Trust the Aegis root for clients that validate:
-curl -fsS https://aegis.sz3yan.com/ca/root.pem -o szejo-root.pem
+curl -fsS https://aegis.orchubi.sz3yan.com/ca/root.pem -o szejo-root.pem
 ```
 
 ## Renew (90-day leaves)
@@ -49,7 +50,9 @@ curl -fsS https://aegis.sz3yan.com/ca/root.pem -o szejo-root.pem
 0 3 1 * * cd /path/to/szejo-control-plane && \
   szejo certs renew
 ```
-Re-issues + overwrites the files; Traefik hot-reloads on the change.
+Re-issues + overwrites the files and rewrites `tls-internal.yml`'s trailer
+comment — Traefik only watches the dynamic config files, not the cert files
+they point at, so that rewrite is what triggers the reload.
 
 ## Revert
 
