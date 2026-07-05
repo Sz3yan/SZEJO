@@ -15,15 +15,17 @@ cert still serves everything else. Reverting = delete one file.
 ## Prerequisites
 
 - Aegis running with its CA initialized (`POST /admin/ca/init` succeeded).
-- A mainframe token with scope `aegis:manage` in `AEGIS_MGMT_TOKEN`
-  (mint via mainframe `client_credentials`, like `AEGIS_JANUS_TOKEN`).
+- A mainframe token with scope `aegis:manage` — `szejo certs` reuses
+  `MAINFRAME_AEGIS_TOKEN` from the pass store (same service token the
+  mainframe container consumes as `AEGIS_MGMT_TOKEN`); set `AEGIS_MGMT_TOKEN`
+  only to override it.
 
 ## Enable
 
 ```bash
 # 1. Issue the cert (Aegis generates the keypair, returns it once).
-szejo secrets run -- szejo certs issue \
-  --cn sz3yan.com --sans '*.sz3yan.com,sz3yan.com'
+#    No wrapper — szejo subcommands self-inject their declared keys.
+szejo certs issue --cn sz3yan.com --sans '*.sz3yan.com,sz3yan.com'
 #    → writes manifest/traefik/certs/internal.{cert,key}.pem
 
 # 2. Activate the dynamic config (Traefik hot-reloads via file.watch).
@@ -45,7 +47,7 @@ curl -fsS https://aegis.sz3yan.com/ca/root.pem -o szejo-root.pem
 
 ```cron
 0 3 1 * * cd /path/to/szejo-control-plane && \
-  szejo secrets run -- szejo certs renew
+  szejo certs renew
 ```
 Re-issues + overwrites the files; Traefik hot-reloads on the change.
 

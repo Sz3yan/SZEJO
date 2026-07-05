@@ -35,7 +35,7 @@ Store it and push the template:
 
 ```sh
 szejo secrets set CLAUDE_OAUTH_TOKEN <token>
-szejo secrets run -- szejo coder push szejo-portfolio
+szejo coder push szejo-portfolio
 ```
 
 Then update the running workspace in the Coder UI (Update button on the
@@ -62,7 +62,7 @@ Same steps as first-time setup:
 3. Re-push the template:
 
    ```sh
-   szejo secrets run -- szejo coder push szejo-portfolio
+   szejo coder push szejo-portfolio
    ```
 
 4. Rebuild the workspace: Coder UI → portfolio workspace → **Update**.
