@@ -19,6 +19,28 @@ ORCHUBI SERVER (Windows 11 Pro + WSL2)
 
 ---
 
+DOCKER-ONLY TOOLING (hard rule)
+
+Host holds source code only. No dev tooling runs on the host — ever.
+
+    - NEVER on host: pytest, ruff, mypy, pip install, uv sync/run, or any test/lint/package command.
+    - ALL testing, linting, package installs run inside docker (from `szejo-control-plane/`):
+
+        # tests
+        docker run --rm -v "$PWD":/w -w /w python:3.11-slim sh -c "pip install -q -e . pytest && pytest -q"
+
+        # lint
+        docker run --rm -v "$PWD":/w -w /w ghcr.io/astral-sh/ruff:latest check .
+
+    - `.pytest_cache/`, `.ruff_cache/`, `.venv/` appearing in the repo means tooling ran on host —
+      that is a violation: delete the cache and rerun inside docker.
+
+    Sole exception: the szejo CLI itself is a host operator tool (needs pass/GPG + the docker
+    socket), so `uv tool install --editable . --python 3.11` on host is sanctioned.
+    `szejo_cli/__pycache__` from running it on host is expected and gitignored.
+
+---
+
 SZE YAN's CONSTITUTION
 
 Behavioral guidelines to reduce common LLM coding mistakes. 
@@ -68,10 +90,6 @@ These guidelines are working if:
     - Don't remove pre-existing dead code unless asked.
 
     The test: Every changed line should trace directly to the user's request.
-
-    All to be in docker environment
-    - host only have the source code
-    - testing, installing packages, linting to be done in docker environment
 
 4. Goal-Driven Execution (Define success criteria. Loop until verified)
 
