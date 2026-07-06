@@ -136,22 +136,32 @@ any `certs` command will do anything.
   - Idempotent. Generates stable secrets once, rotates admin password unless passkeys registered.
   - `bootstrap [--force] [--apply] [--sync-downstream]`
 
-**setup** — full-stack provisioning (bootstrap → terraform → compose up → crowdsec)
+**setup** — full-stack provisioning (bootstrap → terraform → compose up → crowdsec → tokens mint)
   - Single command for fresh environments. Safe to re-run. Docker Compose only, no k3s.
   - `szejo secrets run -- szejo setup`
 
-**certs** — Aegis-backed CA + internal TLS issuance (no local CA material)
-  - `certs init`                    idempotently create the Root + TLS CAs in Aegis (keys minted in Janus)
-  - `certs issue [...]`             issue an internal TLS cert from Aegis
-  - `certs renew [...]`             same as issue, cron-friendly (schedule monthly)
+**tokens** — cross-service tokens minted via the platform-svc client (client_credentials)
+  - `tokens mint [--force --no-restart]`  idempotently mint AEGIS_JANUS_TOKEN / MAINFRAME_AEGIS_TOKEN /
+    MAINFRAME_JANUS_TOKEN into the pass store and recreate their consumers (aegis, mainframe).
+    1-year tokens — re-run to renew (cron-friendly). Console→sentinel needs no static token
+    (mainframe auto-refreshes via the same platform-svc client).
+
+**janus** — Janus (keys)
+  - `janus enable-jwt [--yes]`      Phase 6: create the jwt-mainframe key so mainframe signs
+    JWTs in Janus. JWT_SIGNER defaults to janus with an automatic local-key fallback (logged
+    CRITICAL), so until this runs mainframe signs locally — docs/runbooks/jwt-signing-via-janus.md
+
+**aegis** — Aegis (certificates): CA + internal TLS (no local CA material). Deprecated alias: `certs`
+  - `aegis init`                    idempotently create the Root + TLS CAs in Aegis (keys minted in Janus)
+  - `aegis issue [...]`             issue an internal TLS cert from Aegis
+  - `aegis renew [...]`             same as issue, cron-friendly (schedule monthly)
+  - `aegis enable-mtls`             Phase 5 (AAL3): activate the Traefik :8443 mTLS gateway
+    (docs/runbooks/aal3-client-certs.md)
 
 **coder** — push Coder workspace templates; single source of truth for template variables
   - `coder push [template...]`      push one or all templates (szejo-base, szejo-atlas, szejo-portfolio, szejo-sentinel)
   - Variables read from decrypted env automatically — always chain via `secrets run`
   - Example: `szejo secrets run -- szejo coder push szejo-portfolio`
-
-**socket-guard** — self-heal the docker-socket-proxy after a Docker restart
-  - `socket-guard run` / `socket-guard install`
 
 No auto-updater: Watchtower and the cosign deploy-verify gate are both removed
 from the active path (parked under `future-implementation/` — szejo isn't

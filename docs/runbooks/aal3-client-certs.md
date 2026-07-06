@@ -18,45 +18,22 @@ handshake on `:8443`.
 
 ## One-time enable
 
-```bash
-# 1. Secrets.
-szejo secrets rotate MTLS_GATEWAY_SECRET
-szejo secrets set MAINFRAME_AEGIS_TOKEN   # mainframe token, scope aegis:manage (optional, for /enroll)
-
-# 2. Aegis trust chain → both Traefik and mainframe.
-curl -fsS https://aegis.sz3yan.com/ca/chain.pem -o manifest/traefik/certs/aegis-chain.pem
-docker cp manifest/traefik/certs/aegis-chain.pem \
-  szejo-control-plane-mainframe:/app/keys/aegis-chain.pem
-
-# 3. Activate the Traefik mTLS dynamic config + insert the marker secret.
-cp manifest/traefik/dynamic/mtls.yml.example manifest/traefik/dynamic/mtls.yml
-sed -i "s#REPLACE_WITH_MTLS_GATEWAY_SECRET#$(szejo secrets get MTLS_GATEWAY_SECRET)#" \
-  manifest/traefik/dynamic/mtls.yml
-```
-
-### 4. Add the `:8443` entrypoint + port (Traefik `command:` + `ports:`)
-
-```yaml
-# szejo-control-plane-proxy command:
-- --entrypoints.websecure-mtls.address=:8443
-# ports:
-- "8443:8443"
-```
-
-### 5. Route `/auth/cert` over the mTLS entrypoint only (mainframe labels)
-
-```yaml
-- "traefik.http.routers.mainframe-mtls.rule=Host(`${MAINFRAME_HOST}`) && PathPrefix(`/auth/cert`)"
-- "traefik.http.routers.mainframe-mtls.entrypoints=websecure-mtls"
-- "traefik.http.routers.mainframe-mtls.tls=true"
-- "traefik.http.routers.mainframe-mtls.tls.options=aegis-mtls@file"
-- "traefik.http.routers.mainframe-mtls.middlewares=mtls-passcert@file,mtls-marker@file,crowdsec-bouncer@file"
-- "traefik.http.routers.mainframe-mtls.service=mainframe-api"
-```
+The `:8443` entrypoint, published port, and the `mainframe-mtls` router labels
+are committed in `docker-compose.edge.yml` / `docker-compose.identity.yml`.
+The host-local, secret-bearing parts are two commands:
 
 ```bash
-szejo secrets run -- docker compose up -d szejo-control-plane-proxy szejo-control-plane-mainframe
+szejo tokens mint          # MAINFRAME_AEGIS_TOKEN (aegis:manage) for /enroll — see docs
+szejo aegis enable-mtls    # MTLS_GATEWAY_SECRET + Aegis chain (Traefik + mainframe)
+                           # + mtls.yml from the example + recreate proxy/mainframe
 ```
+
+`enable-mtls` fetches `/ca/chain.pem` from Aegis into
+`manifest/traefik/certs/aegis-chain.pem`, copies it to
+`szejo-control-plane-mainframe:/app/keys/aegis-chain.pem`, renders
+`manifest/traefik/dynamic/mtls.yml` (gitignored — carries the marker secret),
+and recreates the proxy + mainframe. Re-run any time (idempotent) — e.g. after
+the Aegis CA is rotated.
 
 ## Enroll a user + log in
 
