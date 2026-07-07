@@ -188,6 +188,20 @@ manually: `docker compose pull <service> && docker compose up -d <service>`.
 Coder workspaces (portfolio/atlas/sentinel) instead pull their latest image on
 every workspace restart (`coder stop <name> && coder start <name>`).
 
+### Editing portfolio / atlas / sentinel source
+
+Source for these public sites lives in their own GitHub repos (e.g.
+`Sz3yan/szejo-portfolio`), **not** in this monorepo. To edit:
+
+    coder ssh Sz3yan/<workspace>          # or the VS Code Web / Cursor coder_app
+    cd ~/<repo>                           # edit here
+    git add -A && git commit -m "..."
+    git push origin production            # CI builds ghcr.io/sz3yan/... images
+    coder stop Sz3yan/<workspace> && coder start Sz3yan/<workspace>  # pulls new image
+
+See `docs/runbooks/portfolio-coder-workflow.md` for the full worked example
+(dev loop, CMS migrations, troubleshooting) — same flow applies to atlas/sentinel.
+
 ### Common patterns
 
 ```bash
