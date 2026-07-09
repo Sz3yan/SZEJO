@@ -4,13 +4,17 @@
 
 sz3yan.com is content-read-only (no more `/owner` editor — content now lives in
 PayloadCMS at `cms.sz3yan.com`, served by a fully public, unauthenticated REST
-API). But two visitor-facing features on the site still make live calls to the
+API). One visitor-facing feature on the site still makes live calls to the
 **portfolio's own backend**, not the CMS:
 
-- FAQ chat box → `POST /api/chat`
-- Contact / freelance inquiry form → `POST /api/inquiry`
+- FAQ chat box → `POST /api/chat` (when enabled)
 
-Without a gate, both are free-for-anyone to script-hammer. Mainframe (the
+Freelance contact no longer hits the portfolio backend: the inquiry form and
+SMTP path were replaced by **PostHog Support** (`posthog.conversations` on the
+client). Abuse controls for that path live in PostHog (rate limits + inbox),
+not Mainframe anon tokens.
+
+Without a gate, chat would be free-for-anyone to script-hammer. Mainframe (the
 SZEJO identity provider) is the thing that issues short-lived tokens and lets
 the portfolio backend tell "real browser session" apart from a bot blasting
 requests.
@@ -23,7 +27,7 @@ requests.
                                            client_id=portfolio-anon + secret)
 3. Mainframe         → portfolio backend  short-lived JWT (5 min TTL)
 4. portfolio backend → Browser            hands over the JWT
-5. Browser           → portfolio backend  POST /api/chat or /api/inquiry,
+5. Browser           → portfolio backend  POST /api/chat,
                                            Authorization: Bearer <JWT>
 ```
 
@@ -33,9 +37,10 @@ server. The browser never sees it; it only ever holds the short-lived JWT.
 ## The two pieces in Mainframe
 
 **`portfolio-anon` OAuth client** — confidential client, `client_credentials`
-grant, scopes `chat:invoke` + `inquiry:create`. This is the credential the
-portfolio backend presents to Mainframe in step 2 above. Defined/provisioned
-via `core/backend/mainframe/app/api/v1/admin/portfolio_service_account.py`.
+grant, scopes `chat:invoke` (+ historically `inquiry:create`, now unused).
+This is the credential the portfolio backend presents to Mainframe in step 2
+above. Defined/provisioned via
+`core/backend/mainframe/app/api/v1/admin/portfolio_service_account.py`.
 
 **"Portfolio Service Account" user** (`portfolio.serviceaccount@sz3yan.com`)
 — not a login account, no sign-in flow uses it. Pure schema plumbing:
@@ -53,7 +58,15 @@ PayloadCMS replaced the hand-rolled thoughts/FAQ editor. See the mainframe
 client manifest (`core/backend/mainframe/clients/portfolio.yml`) and
 `scripts/remove_portfolio_owner_client.py` for that cleanup.
 
-The anon client and service account documented here are **unrelated to
-content authorship** and stay — they gate chat/inquiry abuse, not CMS reads.
-CMS reads (`cms.sz3yan.com/api/thoughts`, `/api/faqs`) need zero
-authentication; they're public by design.
+The freelance inquiry route (`POST /api/inquiry`) and portfolio SMTP usage
+were removed when contact moved to PostHog Support. The anon client and
+service account documented here are **unrelated to content authorship** and
+stay for chat abuse gating (and any future portfolio-scoped APIs). CMS reads
+(`cms.sz3yan.com/api/thoughts`, `/api/faqs`) need zero authentication; they're
+public by design.
+
+## SMTP note
+
+Control-plane `szejo-control-plane-smtp` / `SMTP_RELAY_*` remain for
+**Mainframe** email (password resets, etc.). Portfolio no longer depends on
+that relay.
